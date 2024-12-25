@@ -1,0 +1,17 @@
+# Xcode
+build/
+*.xcuserstate
+*.xcworkspace
+
+# Swift Package Manager
+/.build
+/.package
+
+# CocoaPods
+Pods/
+
+# Derived data
+DerivedData/
+
+# User-specific files
+*.swp
