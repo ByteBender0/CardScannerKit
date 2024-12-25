@@ -7,14 +7,14 @@
 
 import Foundation
 
-class CombinedValidationStrategy: CardValidationStrategy {
+public class CombinedValidationStrategy: CardValidationStrategy {
     private let strategies: [CardValidationStrategy]
     
-    init(strategies: [CardValidationStrategy]) {
+    public init(strategies: [CardValidationStrategy]) {
         self.strategies = strategies
     }
     
-    func isValid(cardNumber: String) -> Bool {
+    public func isValid(cardNumber: String) -> Bool {
         for strategy in strategies {
             if !strategy.isValid(cardNumber: cardNumber) {
                 return false

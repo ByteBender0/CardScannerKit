@@ -45,7 +45,7 @@ enum CardScannerError: Error {
     case invalidCardDetails
 }
 
-public class CardScanner: NSObject {
+public class CardScanner: NSObject, CardScannerProtocol {
     
     var delegate: CardScannerDelegate?
     
@@ -58,6 +58,10 @@ public class CardScanner: NSObject {
         self.cameraPermissionManager = cameraPermissionManager
         super.init()
         sequenceHandler = VNSequenceRequestHandler()
+    }
+    
+    func stopScanning() {
+        captureSession?.stopRunning()
     }
     
     public func startScanning(in view: UIView) {
