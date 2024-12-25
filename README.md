@@ -17,8 +17,7 @@ You can add `CardScannerKit` as a dependency to your Xcode project using **Swift
 
 1. Open your Xcode project.
 2. Go to **File > Swift Packages > Add Package Dependency**.
-3. Enter the repository URL:
-- `(https://github.com/ByteBender0/CardScannerKit)`
+3. Enter the repository URL: `https://github.com/ByteBender0/CardScannerKit`
 
 4. Select the appropriate version or branch for your project.
 
