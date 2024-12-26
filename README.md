@@ -39,3 +39,101 @@ In your view controller or wherever you want to use the scanner, import `CardSca
 
 ```swift
 import CardScannerKit
+```
+
+### 2. **Set Up CardScanner**
+
+In your `ViewController`, create an instance of CardScanner and set the delegate to handle the scan results.
+
+```
+import UIKit
+import CardScannerKit
+
+class ViewController: UIViewController, CardScannerDelegate {
+    
+    private var cardScanner: CardScanner!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Initialize the CardScanner with a delegate
+        cardScanner = CardScanner()
+        cardScanner.delegate = self
+        
+        // Start scanning
+        cardScanner.startScanning(in: self.view)
+    }
+    
+    // Delegate method when scan is successful
+    func didScanCard(cardNumber: String, cardHolderName: String, expiryDate: String) {
+        print("Card Scanned Successfully:")
+        print("Card Number: \(cardNumber)")
+        print("Cardholder Name: \(cardHolderName)")
+        print("Expiry Date: \(expiryDate)")
+    }
+    
+    // Delegate method when scan fails
+    func didFailWithError(error: Error) {
+        print("Error scanning card: \(error.localizedDescription)")
+    }
+}
+```
+### 3. **Add Camera Permission to Info.plist**
+To use the camera for scanning, make sure to add the following key to your Info.plist to request camera access permission from the user:
+```
+<key>NSCameraUsageDescription</key>
+<string>We need access to your camera to scan the card.</string>
+
+```
+
+This will display a message explaining why the app needs access to the camera.
+
+### 4. **Start Scanning**
+
+Call the `startScanning(in:)` method to begin scanning. You can pass any UIView (e.g., the main view of your ViewController) where the camera feed will be displayed.
+
+```
+cardScanner.startScanning(in: self.view)
+```
+
+This will initiate the camera feed and display the live video. Once the card is detected and processed, the results will be sent to the didScanCard delegate method.
+
+### 5. **Stop Scanning**
+
+To stop scanning at any time, you can call the `stopScanning()` method:
+
+```
+cardScanner.stopScanning()
+```
+This will stop the camera feed and the scanning process.
+
+### 6. **Delegate Methods**
+
+Once the card is scanned successfully, the delegate method didScanCard will be triggered, and you can print or process the card details:
+
+```
+Card Scanned Successfully:
+Card Number: 4111 1111 1111 1111
+Cardholder Name: John Doe
+Expiry Date: 12/25
+```
+If the scanning fails, the didFailWithError method will be triggered, and you will get an error message:
+
+```
+Error scanning card: The card could not be detected.
+
+```
+
+### 7. **Error Handling**
+In case of errors, you can show appropriate error messages to the user or take any other necessary action. For example:
+```
+func didFailWithError(error: Error) {
+    print("Error scanning card: \(error.localizedDescription)")
+    // Handle error (e.g., show an alert to the user)
+}
+```
+
+## Conclusion
+The CardScannerKit makes it easy to scan credit card information using the camera. By following the steps outlined in this guide, you can integrate the CardScanner into your app, handle scanning results, and validate the scanned card details.
+
+This usage section should give you a clear understanding of how to use the CardScannerKit in your project. Feel free to modify or extend the functionality based on your app's requirements.
