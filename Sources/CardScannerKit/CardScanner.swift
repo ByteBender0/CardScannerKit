@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Vision
+#if canImport(UIKit)
 import UIKit
 
 public protocol CameraPermissionHandler {
@@ -145,3 +146,5 @@ extension CardScanner: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
+#endif
+

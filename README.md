@@ -1,29 +1,48 @@
 # CardScannerKit
 
-`CardScannerKit` is a Swift-based library for scanning credit card details from images or camera feeds. It leverages Apple's Vision framework to recognize text (card number, cardholder name, and expiry date) from images or live camera input, making it easy to extract the necessary information for your mobile payment solutions or card management apps.
+`CardScannerKit` is a Swift-based library for scanning credit card details from camera feeds using Apple's Vision framework. It provides real-time text recognition to extract card numbers, cardholder names, and expiry dates, along with comprehensive card validation and type detection capabilities.
 
 ## Features
 
-- **Text Recognition**: Extracts **card number**, **cardholder name**, and **expiry date** from images or camera feeds using the Vision framework.
-- **Camera Permission Handling**: Asks for and checks camera permissions using a helper class.
-- **Modular Architecture**: Well-structured code following best practices like separation of concerns and protocol-oriented design.
-- **Customizable**: Can be easily extended to support additional functionality or features.
+- **Real-time Camera Scanning**: Live camera feed processing with Vision framework for text recognition
+- **Card Details Extraction**: Automatically extracts **card number**, **cardholder name**, and **expiry date** from scanned text
+- **Card Type Detection**: Supports detection of major card types including Visa, MasterCard, American Express, Discover, and more
+- **Card Validation**: Implements Luhn algorithm validation with strategy pattern for extensible validation
+- **Camera Permission Handling**: Built-in camera permission management with async/await support
+- **Modular Architecture**: Protocol-oriented design with separation of concerns
+- **iOS 13+ Support**: Compatible with modern iOS applications
+
+## Supported Card Types
+
+- Visa
+- MasterCard
+- American Express
+- Discover
+- Diners Club
+- JCB
+- Maestro
+- UnionPay
+- Carte Blanche
+- Switch
 
 ## Installation
 
 ### Using Swift Package Manager
 
-You can add `CardScannerKit` as a dependency to your Xcode project using **Swift Package Manager**.
-
-1. Open your Xcode project.
-2. Go to **File > Swift Packages > Add Package Dependency**.
+1. Open your Xcode project
+2. Go to **File > Swift Packages > Add Package Dependency**
 3. Enter the repository URL: `https://github.com/ByteBender0/CardScannerKit`
-
-4. Select the appropriate version or branch for your project.
+4. Select the appropriate version or branch
 
 ### Manual Installation
 
-If you're using a local version of the `CardScannerKit` package, you can add it by dragging and dropping the folder into your project or referencing it in your `Package.swift` file.
+Add the package to your `Package.swift` dependencies:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/ByteBender0/CardScannerKit", from: "1.0.0")
+]
+```
 
 ## Requirements
 
@@ -33,30 +52,26 @@ If you're using a local version of the `CardScannerKit` package, you can add it 
 
 ## Usage
 
-### 1. **Import CardScannerKit**
-
-In your view controller or wherever you want to use the scanner, import `CardScannerKit`:
+### 1. Import CardScannerKit
 
 ```swift
 import CardScannerKit
 ```
 
-### 2. **Set Up CardScanner**
+### 2. Basic Card Scanning
 
-In your `ViewController`, create an instance of CardScanner and set the delegate to handle the scan results.
-
-```
+```swift
 import UIKit
 import CardScannerKit
 
 class ViewController: UIViewController, CardScannerDelegate {
     
     private var cardScanner: CardScanner!
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Initialize the CardScanner with a delegate
+        
+        // Initialize CardScanner
         cardScanner = CardScanner()
         cardScanner.delegate = self
         
@@ -64,76 +79,147 @@ class ViewController: UIViewController, CardScannerDelegate {
         cardScanner.startScanning(in: self.view)
     }
     
-    // Delegate method when scan is successful
+    // MARK: - CardScannerDelegate
+    
     func didScanCard(cardNumber: String, cardHolderName: String, expiryDate: String) {
         print("Card Scanned Successfully:")
         print("Card Number: \(cardNumber)")
         print("Cardholder Name: \(cardHolderName)")
         print("Expiry Date: \(expiryDate)")
+        
+        // Validate the card
+        let validator = CardValidator(validationStrategy: LuhnValidationStrategy())
+        let isValid = validator.validate(cardNumber: cardNumber)
+        print("Card is valid: \(isValid)")
+        
+        // Detect card type
+        let cardDetails = CardDetails()
+        let cardType = cardDetails.cardType
+        print("Card Type: \(cardType ?? "Unknown")")
     }
     
-    // Delegate method when scan fails
     func didFailWithError(error: Error) {
         print("Error scanning card: \(error.localizedDescription)")
     }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        cardScanner.stopScanning()
+    }
 }
 ```
-### 3. **Add Camera Permission to Info.plist**
-To use the camera for scanning, make sure to add the following key to your Info.plist to request camera access permission from the user:
-```
+
+### 3. Camera Permission Setup
+
+Add the following key to your `Info.plist`:
+
+```xml
 <key>NSCameraUsageDescription</key>
-<string>We need access to your camera to scan the card.</string>
-
+<string>This app needs camera access to scan credit cards.</string>
 ```
 
-This will display a message explaining why the app needs access to the camera.
+### 4. Advanced Usage with Custom Validation
 
-### 4. **Start Scanning**
-
-Call the `startScanning(in:)` method to begin scanning. You can pass any UIView (e.g., the main view of your ViewController) where the camera feed will be displayed.
-
-```
-cardScanner.startScanning(in: self.view)
-```
-
-This will initiate the camera feed and display the live video. Once the card is detected and processed, the results will be sent to the didScanCard delegate method.
-
-### 5. **Stop Scanning**
-
-To stop scanning at any time, you can call the `stopScanning()` method:
-
-```
-cardScanner.stopScanning()
-```
-This will stop the camera feed and the scanning process.
-
-### 6. **Delegate Methods**
-
-Once the card is scanned successfully, the delegate method didScanCard will be triggered, and you can print or process the card details:
-
-```
-Card Scanned Successfully:
-Card Number: 4111 1111 1111 1111
-Cardholder Name: John Doe
-Expiry Date: 12/25
-```
-If the scanning fails, the didFailWithError method will be triggered, and you will get an error message:
-
-```
-Error scanning card: The card could not be detected.
-
-```
-
-### 7. **Error Handling**
-In case of errors, you can show appropriate error messages to the user or take any other necessary action. For example:
-```
-func didFailWithError(error: Error) {
-    print("Error scanning card: \(error.localizedDescription)")
-    // Handle error (e.g., show an alert to the user)
+```swift
+// Custom validation strategy
+class CustomValidationStrategy: CardValidationStrategy {
+    func isValid(cardNumber: String) -> Bool {
+        // Your custom validation logic
+        return cardNumber.count >= 13 && cardNumber.count <= 19
+    }
 }
+
+// Using custom validation
+let customValidator = CardValidator(validationStrategy: CustomValidationStrategy())
+let isValid = customValidator.validate(cardNumber: "4111111111111111")
 ```
 
-## Conclusion
-The CardScannerKit makes it easy to scan credit card information using the camera. By following the steps outlined in this guide, you can integrate the CardScanner into your app, handle scanning results, and validate the scanned card details.
+### 5. Card Details Extraction
 
-This usage section should give you a clear understanding of how to use the CardScannerKit in your project. Feel free to modify or extend the functionality based on your app's requirements.
+```swift
+// Extract card details from text manually
+let text = "John Doe\n4111 1111 1111 1111\n12/25"
+let cardDetails = CardDetailsExtractor.extractCardDetails(from: text)
+
+print("Card Number: \(cardDetails.cardNumber ?? "Not found")")
+print("Cardholder: \(cardDetails.cardHolderName ?? "Not found")")
+print("Expiry: \(cardDetails.expiryDate ?? "Not found")")
+```
+
+## API Reference
+
+### CardScanner
+
+Main class for camera-based card scanning.
+
+```swift
+public class CardScanner: NSObject, CardScannerProtocol
+```
+
+**Methods:**
+- `startScanning(in view: UIView)` - Starts the camera scanning process
+- `stopScanning()` - Stops the scanning process
+
+**Delegate:**
+- `didScanCard(cardNumber:cardHolderName:expiryDate:)` - Called when card is successfully scanned
+- `didFailWithError(error:)` - Called when scanning fails
+
+### CardValidator
+
+Validates card numbers using different strategies.
+
+```swift
+public class CardValidator
+```
+
+**Methods:**
+- `validate(cardNumber: String) -> Bool` - Validates a card number
+- `setValidationStrategy(_ strategy: CardValidationStrategy)` - Sets the validation strategy
+
+### LuhnValidationStrategy
+
+Implements the Luhn algorithm for card number validation.
+
+```swift
+public class LuhnValidationStrategy: CardValidationStrategy
+```
+
+### CardDetails
+
+Structure containing extracted card information.
+
+```swift
+public struct CardDetails
+```
+
+**Properties:**
+- `cardNumber: String?` - The card number
+- `cardHolderName: String?` - The cardholder name
+- `expiryDate: String?` - The expiry date
+- `cardType: String?` - The detected card type
+
+## Error Handling
+
+The library provides several error types:
+
+- `CardScannerError.cameraPermissionDenied` - Camera permission not granted
+- `CardScannerError.cameraSetupFailed` - Failed to setup camera
+- `CardScannerError.textRecognitionFailed` - Text recognition failed
+- `CardScannerError.invalidCardDetails` - Invalid or incomplete card details
+
+## Architecture
+
+The library follows a modular, protocol-oriented design:
+
+- **Protocols**: Define contracts for scanning, validation, and permission handling
+- **Strategies**: Implement different validation approaches
+- **Helpers**: Provide utility functions for text extraction
+- **Validators**: Handle card type detection and validation
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

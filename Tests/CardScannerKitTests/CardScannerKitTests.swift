@@ -1,9 +1,6 @@
 import XCTest
 @testable import CardScannerKit
 
-import XCTest
-@testable import CardScannerKit
-
 final class CardScannerKitTests: XCTestCase {
     
     func testExample() throws {
