@@ -146,5 +146,44 @@ extension CardScanner: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
+
+// MARK: - Image-Based Scanning
+
+extension CardScanner {
+    /// Scans card details from a static UIImage (photo library, screenshot, etc.)
+    /// - Parameters:
+    ///   - image: The UIImage to scan
+    ///   - completion: Completion handler with Result<CardDetails, Error>
+    public func scanImage(_ image: UIImage, completion: @escaping (Result<CardDetails, Error>) -> Void) {
+        guard let cgImage = image.cgImage else {
+            completion(.failure(CardScannerError.invalidCardDetails))
+            return
+        }
+        let request = VNRecognizeTextRequest { request, error in
+            guard error == nil else {
+                completion(.failure(error ?? CardScannerError.textRecognitionFailed))
+                return
+            }
+            let recognizedText = (request.results as? [VNRecognizedTextObservation])?
+                .compactMap { $0.topCandidates(1).first?.string }
+                .joined(separator: "\n") ?? ""
+            let cardDetails = CardDetailsExtractor.extractCardDetails(from: recognizedText)
+            if let cardNumber = cardDetails.cardNumber, let cardHolderName = cardDetails.cardHolderName, let expiryDate = cardDetails.expiryDate {
+                completion(.success(cardDetails))
+            } else {
+                completion(.failure(CardScannerError.invalidCardDetails))
+            }
+        }
+        request.recognitionLevel = .accurate
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try handler.perform([request])
+            } catch {
+                completion(.failure(error))
+            }
+        }
+    }
+}
 #endif
 

@@ -10,7 +10,7 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "CardScannerKit",  // This name must match what you're referencing in your project
+            name: "CardScannerKit",
             targets: ["CardScannerKit"]
         ),
     ],
