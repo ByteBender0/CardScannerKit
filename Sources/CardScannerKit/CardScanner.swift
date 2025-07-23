@@ -10,6 +10,26 @@ import Vision
 #if canImport(UIKit)
 import UIKit
 
+fileprivate func cardScannerLocalized(_ key: String) -> String {
+    return NSLocalizedString(key, tableName: "CardScanner", bundle: .main, value: key, comment: "")
+}
+
+fileprivate func cardScannerErrorMessage(_ error: Error) -> String {
+    if let err = error as? CardScannerError {
+        switch err {
+        case .cameraPermissionDenied:
+            return cardScannerLocalized("Camera permission denied. Please enable camera access in Settings.")
+        case .cameraSetupFailed:
+            return cardScannerLocalized("Failed to set up camera.")
+        case .textRecognitionFailed:
+            return cardScannerLocalized("Text recognition failed. Try again.")
+        case .invalidCardDetails:
+            return cardScannerLocalized("Could not detect valid card details.")
+        }
+    }
+    return error.localizedDescription
+}
+
 public protocol CameraPermissionHandler {
     func checkCameraPermissions() async -> Bool
 }
@@ -46,6 +66,53 @@ enum CardScannerError: Error {
     case invalidCardDetails
 }
 
+// MARK: - Overlay View
+
+public class CardScannerOverlayView: UIView {
+    public var borderColor: UIColor = .systemGreen { didSet { setNeedsDisplay() } }
+    public var borderWidth: CGFloat = 3.0 { didSet { setNeedsDisplay() } }
+    public var cornerRadius: CGFloat = 16.0 { didSet { setNeedsDisplay() } }
+    public var overlayAlpha: CGFloat = 0.5 { didSet { setNeedsDisplay() } }
+    public var guidanceText: String? { didSet { setNeedsDisplay() } }
+    public var guidanceTextColor: UIColor = .white { didSet { setNeedsDisplay() } }
+    public var guidanceFont: UIFont = .systemFont(ofSize: 18, weight: .semibold) { didSet { setNeedsDisplay() } }
+
+    public override func draw(_ rect: CGRect) {
+        super.draw(rect)
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        ctx.setFillColor(UIColor.black.withAlphaComponent(overlayAlpha).cgColor)
+        ctx.fill(bounds)
+        // Card rectangle
+        let cardRect = CGRect(
+            x: bounds.midX - bounds.width * 0.4,
+            y: bounds.midY - bounds.height * 0.12,
+            width: bounds.width * 0.8,
+            height: bounds.height * 0.24
+        )
+        let path = UIBezierPath(roundedRect: cardRect, cornerRadius: cornerRadius)
+        ctx.setBlendMode(.clear)
+        ctx.addPath(path.cgPath)
+        ctx.fillPath()
+        ctx.setBlendMode(.normal)
+        // Border
+        borderColor.setStroke()
+        path.lineWidth = borderWidth
+        path.stroke()
+        // Guidance text
+        if let text = guidanceText {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: guidanceFont,
+                .foregroundColor: guidanceTextColor,
+                .paragraphStyle: paragraph
+            ]
+            let textRect = CGRect(x: 0, y: cardRect.maxY + 16, width: bounds.width, height: 30)
+            (text as NSString).draw(in: textRect, withAttributes: attrs)
+        }
+    }
+}
+
 public class CardScanner: NSObject, CardScannerProtocol {
     
     var delegate: CardScannerDelegate?
@@ -55,6 +122,8 @@ public class CardScanner: NSObject, CardScannerProtocol {
     
     private var cameraPermissionManager: CameraPermissionHandler
     
+    private var overlayView: CardScannerOverlayView?
+    
     public init(cameraPermissionManager: CameraPermissionHandler = CameraPermissionManager()) {
         self.cameraPermissionManager = cameraPermissionManager
         super.init()
@@ -63,6 +132,7 @@ public class CardScanner: NSObject, CardScannerProtocol {
     
     func stopScanning() {
         captureSession?.stopRunning()
+        removeOverlay()
     }
     
     public func startScanning(in view: UIView) {
@@ -75,6 +145,7 @@ public class CardScanner: NSObject, CardScannerProtocol {
             }
             
             setupCaptureSession(view: view)
+            addOverlay(to: view)
         }
     }
     
@@ -109,6 +180,19 @@ public class CardScanner: NSObject, CardScannerProtocol {
         let output = AVCaptureVideoDataOutput()
         output.setSampleBufferDelegate(self, queue: DispatchQueue.global(qos: .userInitiated))
         captureSession.addOutput(output)
+    }
+    
+    private func addOverlay(to view: UIView) {
+        removeOverlay()
+        let overlay = CardScannerOverlayView(frame: view.bounds)
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.guidanceText = cardScannerLocalized("Place your card inside the frame")
+        view.addSubview(overlay)
+        overlayView = overlay
+    }
+    private func removeOverlay() {
+        overlayView?.removeFromSuperview()
+        overlayView = nil
     }
 }
 
